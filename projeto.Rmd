@@ -1,0 +1,592 @@
+---
+title: "Untitled"
+author: "Bruno"
+date: "29/11/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+install.packages('e1071', dependencies=TRUE)
+library(e1071)
+library(caret)
+library(MASS)
+library(car)
+library(Epi)
+library(dplyr)
+library(caret)
+library(hnp)
+library(ggplot2)
+library("tidyverse")
+library("broom")
+library(dplyr)
+```
+
+
+#A)
+
+```{r}
+dados <- read.csv("covid.csv", header=TRUE, dec=',')
+
+set.seed(10288640)
+tabela <- dados[sample(nrow(dados), 2000), ]
+
+write.csv(tabela,file= "baseprincipal.csv",row.names = FALSE)
+```
+
+
+#B) 
+
+```{r}
+tabela <- read.csv("baseprincipal.csv", header=TRUE, dec=',')
+
+set.seed(10288640)
+dt = sort(sample(nrow(tabela), nrow(tabela)*.8))
+
+train<-tabela[dt,]
+test<-tabela[-dt,]
+
+write.csv(train,file= "basetreino.csv",row.names = FALSE)
+write.csv(test,file= "baseteste.csv",row.names = FALSE)
+```
+
+
+#C)
+
+Iremos modificar os dados da variável dependente y, de 1, 2 e 3 para 0, 1 e NA. Além disso, como nosso objetivo de estudo está relacionado a presença ou não de coronavírus, iremos retirar as linhas que contém o dado NA, ou seja, ainda está esperando o resultado do teste. E assim, o nosso problema se adequa para utilizar o modelo de regressão binária.
+```{r}
+train <-  read.csv("basetreino.csv", header=TRUE, dec=',')
+test <-   read.csv("baseteste.csv", header=TRUE, dec=',')
+
+
+train <- train[c('sex', 'patient_type', 'intubed', 'pneumonia', 'age', 'pregnancy',
+       'diabetes', 'copd', 'asthma', 'inmsupr', 'hypertension',
+       'other_disease', 'cardiovascular', 'obesity', 'renal_chronic',
+       'tobacco', 'contact_other_covid','covid_res', 'icu')]
+
+test <- test[c('sex', 'patient_type', 'intubed', 'pneumonia', 'age', 'pregnancy',
+       'diabetes', 'copd', 'asthma', 'inmsupr', 'hypertension',
+       'other_disease', 'cardiovascular', 'obesity', 'renal_chronic',
+       'tobacco', 'contact_other_covid','covid_res', 'icu')]
+
+
+train$covid_res[train$covid_res == 1] <- as.integer(0) 
+train$covid_res[train$covid_res == 2] <- as.integer(1) 
+train$covid_res[train$covid_res == 3] <- NA 
+
+test$covid_res[test$covid_res == 1] <- as.integer(0) 
+test$covid_res[test$covid_res == 2] <- as.integer(1) 
+test$covid_res[test$covid_res == 3] <- NA 
+
+train <- na.omit(train)
+test <- na.omit(test)
+
+
+
+train$intubed[train$intubed == 97] <- 3
+train$intubed[train$intubed == 98] <- 3
+train$intubed[train$intubed == 99] <- 3
+
+train$pregnancy[train$pregnancy == 97] <- 3
+train$pregnancy[train$pregnancy == 98] <- 3
+train$pregnancy[train$pregnancy == 99] <- 3
+
+train$diabetes[train$diabetes == 97] <- 3
+train$diabetes[train$diabetes == 98] <- 3
+train$diabetes[train$diabetes == 99] <- 3
+
+train$copd[train$copd == 97] <- 3
+train$copd[train$copd == 98] <- 3
+train$copd[train$copd == 99] <- 3
+
+train$asthma[train$asthma == 97] <- 3
+train$asthma[train$asthma == 98] <- 3
+train$asthma[train$asthma == 99] <- 3
+
+train$inmsupr[train$inmsupr == 97] <- 3
+train$inmsupr[train$inmsupr == 98] <- 3
+train$inmsupr[train$inmsupr == 99] <- 3
+
+train$hypertension[train$hypertension == 97] <- 3
+train$hypertension[train$hypertension == 98] <- 3
+train$hypertension[train$hypertension == 99] <- 3
+
+train$other_disease[train$other_disease == 97] <- 3
+train$other_disease[train$other_disease == 98] <- 3
+train$other_disease[train$other_disease == 99] <- 3
+
+train$cardiovascular[train$cardiovascular == 97] <- 3
+train$cardiovascular[train$cardiovascular == 98] <- 3
+train$cardiovascular[train$cardiovascular == 99] <- 3
+
+train$obesity[train$obesity == 97] <- 3
+train$obesity[train$obesity == 98] <- 3
+train$obesity[train$obesity == 99] <- 3
+
+train$renal_chronic[train$renal_chronic == 97] <- 3
+train$renal_chronic[train$renal_chronic == 98] <- 3
+train$renal_chronic[train$renal_chronic == 99] <- 3
+
+train$tobacco[train$tobacco == 97] <- 3
+train$tobacco[train$tobacco == 98] <- 3
+train$tobacco[train$tobacco == 99] <- 3
+
+train$contact_other_covid[train$contact_other_covid == 97] <- 3
+train$contact_other_covid[train$contact_other_covid == 98] <- 3
+train$contact_other_covid[train$contact_other_covid == 99] <- 3
+
+train$icu[train$icu == 97] <- 3
+train$icu[train$icu == 98] <- 3
+train$icu[train$icu == 99] <- 3
+
+```
+
+```{r}
+
+test$intubed[test$intubed == 97] <- 3
+test$intubed[test$intubed == 98] <- 3
+test$intubed[test$intubed == 99] <- 3
+
+test$pregnancy[test$pregnancy == 97] <- 3
+test$pregnancy[test$pregnancy == 98] <- 3
+test$pregnancy[test$pregnancy == 99] <- 3
+
+test$diabetes[test$diabetes == 97] <- 3
+test$diabetes[test$diabetes == 98] <- 3
+test$diabetes[test$diabetes == 99] <- 3
+
+test$copd[test$copd == 97] <- 3
+test$copd[test$copd == 98] <- 3
+test$copd[test$copd == 99] <- 3
+
+test$asthma[test$asthma == 97] <- 3
+test$asthma[test$asthma == 98] <- 3
+test$asthma[test$asthma == 99] <- 3
+
+test$inmsupr[test$inmsupr == 97] <- 3
+test$inmsupr[test$inmsupr == 98] <- 3
+test$inmsupr[test$inmsupr == 99] <- 3
+
+test$hypertension[test$hypertension == 97] <- 3
+test$hypertension[test$hypertension == 98] <- 3
+test$hypertension[test$hypertension == 99] <- 3
+
+test$other_disease[test$other_disease == 97] <- 3
+test$other_disease[test$other_disease == 98] <- 3
+test$other_disease[test$other_disease == 99] <- 3
+
+test$cardiovascular[test$cardiovascular == 97] <- 3
+test$cardiovascular[test$cardiovascular == 98] <- 3
+test$cardiovascular[test$cardiovascular == 99] <- 3
+
+test$obesity[test$obesity == 97] <- 3
+test$obesity[test$obesity == 98] <- 3
+test$obesity[test$obesity == 99] <- 3
+
+test$renal_chronic[test$renal_chronic == 97] <- 3
+test$renal_chronic[test$renal_chronic == 98] <- 3
+test$renal_chronic[test$renal_chronic == 99] <- 3
+
+test$tobacco[test$tobacco == 97] <- 3
+test$tobacco[test$tobacco == 98] <- 3
+test$tobacco[test$tobacco == 99] <- 3
+
+test$contact_other_covid[test$contact_other_covid == 97] <- 3
+test$contact_other_covid[test$contact_other_covid == 98] <- 3
+test$contact_other_covid[test$contact_other_covid == 99] <- 3
+
+test$icu[test$icu == 97] <- 3
+test$icu[test$icu == 98] <- 3
+test$icu[test$icu == 99] <- 3
+
+```
+
+
+
+```{r}
+
+x_train <- subset(train, select = -c(covid_res)) 
+y_train <- subset(train, select = c(covid_res)) 
+
+x_test <- subset(test, select = -c(covid_res)) 
+y_test <- subset(test, select = c(covid_res)) 
+
+x_train <- data.frame(scale(x_train))
+
+x_test <- data.frame(scale(x_test))
+
+train_ <- cbind(x_train,y_train)
+test_  <- cbind(x_test,y_test)
+```
+
+
+
+Seja $Y_i, i=1,\ldots,n$ a variável binária definida por
+
+$$Y_{i}=\left\{
+\begin{array}{cc}
+1, & \ tem \  covid\\
+0, & caso\ contrário
+\end{array}
+\right.$$ 
+
+com $n=1427$ sendo o número de pacientes.
+
+Para a formulação de nosso modelo nós assumimos que esta variável segue uma distribuição de Bernoulli denotada por $Y_i \sim Bernoulli(\mu_i)$, a qual assume dois valores 0 e 1, sendo 1 para caso de cavid e 0 caso contrário, com probabilidade $\mu_i\in[0,1]$.
+
+
+Sabemos que para uma resposta binária temos que, $E(Y_i)= \sum_{y=0}^1 P(Y_i=y_i)y = 1\times P(Y_i=1)+0\times P(Y_i=0) =\mu_i \in (0,1)$. Então, temos interesse em estimar $\widehat{\mu}_i$, em que $y=1$ significa que o paciente possui covid.
+
+\mar Assim,  o modelo de regressão binária diz que,
+
+$$Y_{i}\sim Bernoulli(\mu_i)$$ com
+$$\mu_i=F(\eta_i)=F(x_i^T\beta),\ i=1,\dots,n$$
+em que
+\begin{itemize}
+\item $x_i=(x_{i1},x_{i2},\dots,x_{ik})^T$ vetor com as variáveis explicativas, tal que $x_{i1}$ é o intercepto
+\item $\beta=(\beta_1,\dots,\beta_k)^T$ vetor com $k$ coeficientes de regressão, sendo um a mais do que o número de covariáveis.
+\item onde $F(.)$ é a função de distribuição acumulada com suporte na reta e $F^{-1}(.)$ é a função de ligação.
+\end{itemize}
+
+
+O modelo proposto é chamado modelo de regressão binária. Este modelo
+é um modelo de classificação que faz parte dos chamados modelos lineares generalizados. Existem também outros modelos de classificação no aprendizado supervisionado.
+
+\mar Especificamente, vamos considerar o modelo de regressão binária com uma função de ligação logito.
+
+- Componente aleatório: $y_1,...,y_{1427}$ é uma amostra aleatória $Y_i\sim Bernoulli(\mu_i)$
+
+- Componente sistemático: $\eta_i=\beta_0+\beta_1\cdot sex+\beta_2\cdot patient+ \beta_3 \cdot intubed ...$
+
+
+- Função de ligação logit($\mu_i$) = $ln\left( \frac{\mu_i}{1-\mu_i}\right)$
+ou
+ $$\underbrace{\eta_i=log\Big(\frac{\mu_i}{1-\mu_i}\Big)}_{\mbox{Função de ligação logito}}=\underbrace{x^T_i\beta}_{\mbox{Preditor linear}},\ i=1,\dots,4601$$
+
+
+Considerando a função distribuição acumulada da distribuição logística, tem-se a 
+função de ligação logito, ou seja, em que o modelo é
+$$
+\mu_i= F(\eta_i) = \frac{exp(\eta_i) }{1 + exp(\eta_i)} =  \frac{exp(\beta_0 + \beta_1x_1 + \beta_2 x_2 + \beta_3 x_3...) }{1 + exp(\beta_0 + \beta_1x_1 + \beta_2 x_2 + \beta_3 x_3...)}
+$$
+
+\mar  O nosso interesse é utilizar o chamado modelo de regressão binária para modelar $\mu_i=E(Y_i|X), i=1,\ldots,n$ e estimar os coeficientes de regressão \textbf{$\beta$} associados com as variáveis explicativas  considerando uma determinada função de ligação.
+
+
+
+```{r}
+fit.model<-glm(formula = covid_res ~ sex +patient_type+ intubed +pneumonia +  age + pregnancy+
+                        diabetes+ copd +asthma+ inmsupr+ hypertension+
+                        other_disease +cardiovascular+ obesity+ renal_chronic+
+                        tobacco +contact_other_covid+ icu, family = binomial(link = "logit"), data = train_)
+summary(fit.model)
+```
+
+
+
+
+
+```{r}
+(IC1 <- confint.default(fit.model, level=0.95))
+```
+Observamos que os intervalos de confiança dos coeficientes para estimar alguns betas contém o valor zero, o que confirma que essas covariáveis não são significativas
+
+
+\mar Verificando a significância das variáveis utilizando um teste
+alternativo baseado na análise de deviance usando a estatística qui-quadrado.
+
+```{r}
+# Teste chisq para o modelo 1
+anova(fit.model,test = 'Chisq')
+```
+
+\mar Notamos o mesmo que no teste anterior.
+
+
+## análises preditivas 
+
+\mar Usando os seguintes comandos obtemos as Curvas ROC (receiver operating characteristic) para o modelo 
+
+
+```{r, out.width="70%"}
+
+ROC(fit.model$fitted.values, train_$covid_res, plot= "ROC")
+```
+
+Obtivemos uma área abaixo da curva de 0.646, uma sensibilidade de 68,8% e uma especificidade de 54,8%.
+
+
+```{r}
+
+hnp.fit.model = hnp(fit.model, print.on=TRUE, plot=FALSE,
+halfnormal=F)
+plot(hnp.fit.model,main="Modelo Logito",las=1,pch=20,cex=1,col=c(1,1,1,2))
+```
+
+Conforme observado no gráfico acima, nenhum ponto está fora dos limites do envelope, o
+que indica bom ajuste dos dados ao modelo.
+
+## Usando outras funções de ligação
+
+```{r}
+fit.modelp<- glm(formula = covid_res ~  sex +patient_type+ intubed +pneumonia +  age + pregnancy+
+                        diabetes+ copd +asthma+ inmsupr+ hypertension+
+                        other_disease +cardiovascular+ obesity+ renal_chronic+
+                        tobacco +contact_other_covid+ icu, 
+    family = binomial(link = "probit"), data = train_)
+
+summary(fit.modelp)
+```
+
+```{r}
+fit.modelc<- glm(formula = covid_res ~  sex +patient_type+ intubed +pneumonia +  age + pregnancy+
+                        diabetes+ copd +asthma+ inmsupr+ hypertension+
+                        other_disease +cardiovascular+ obesity+ renal_chronic+
+                        tobacco +contact_other_covid+ icu, 
+    family = binomial(link = "cauchit"), data = train_)
+
+summary(fit.modelc)
+```
+
+```{r}
+fit.modelcl<- glm(formula = covid_res ~  sex +patient_type+ intubed +pneumonia +  age + pregnancy+
+                        diabetes+ copd +asthma+ inmsupr+ hypertension+
+                        other_disease +cardiovascular+ obesity+ renal_chronic+
+                        tobacco +contact_other_covid+ icu, 
+    family = binomial(link = "cloglog"), data = train_)
+
+summary(fit.modelcl)
+```
+
+```{r}
+# Geradora para a função de ligação loglog
+loglog <- function( ) structure(list(
+  linkfun = function(mu) -log(-log(mu)),
+  linkinv = function(eta)
+    pmax(pmin(exp(-exp(-eta)), 1 - .Machine$double.eps), 
+         .Machine$double.eps),
+  mu.eta = function(eta) {
+    eta <- pmin(eta, 700)
+    pmax(exp(-eta - exp(-eta)), .Machine$double.eps)
+  },
+  dmu.deta = function(eta)
+    pmax(exp(-exp(-eta) - eta) * expm1(-eta), 
+         .Machine$double.eps),
+  valideta = function(eta) TRUE,
+  name = "loglog"
+), class = "link-glm")
+fit.modelll<- glm(formula = covid_res ~  sex +patient_type+ intubed +pneumonia +  age + pregnancy+
+                        diabetes+ copd +asthma+ inmsupr+ hypertension+
+                        other_disease +cardiovascular+ obesity+ renal_chronic+
+                        tobacco +contact_other_covid+ icu, 
+    family = binomial(link = loglog()), data = train_)
+
+summary(fit.modelll)
+```
+
+```{r}
+# Dataframe para verificar o AIC
+data.frame(Modelo=c("Modelo logito","Modelo probito","Modelo cauchito","Modelo cloglog","Modelo loglog"),
+           AIC = c(AIC(fit.model),AIC(fit.modelp),AIC(fit.modelc),
+                   AIC(fit.modelcl), AIC(fit.modelll)))
+```
+Portanto, escolhemos o modelo de regressão binária com ligação cauchito por porque seu AIC foi o menor dentre todos os outros modelos.
+
+
+## Seleção de variáveis
+
+vamos fazer uma análise de seleção de variáveis utilizando a função do R stepAIC, que nos ajuda a detectar os melhores preditores.
+
+
+\mar Utilizando a função stepAIC, temos:
+```{r}
+# stepAIC
+stepAIC(fit.modelc)
+```
+
+```{r}
+fit.model2<- glm(formula = covid_res ~ sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+    family = binomial(link = "cauchit"), data = train_)
+
+
+summary(fit.model2)
+```
+
+
+
+## Análise diagnóstica para identificar pontos problemáticos no modelo reduzido
+
+
+```{r}
+#source("diag.bino.txt")
+```
+
+
+Identificação de Pontos problemáticos
+
+A figura a seguir apresenta diferentes quantidades calculadas para cada uma das observações usando medidas de diagnóstico de pontos influentes usualmente apresentadas nos modelos lineares generalizados. A quantidade "Cook" corresponde a distância de Cook (para detectar pontos influentes), "Studentized" corresponde aos resíduos stutentizados (para detectar homocedasticidade), "Bonf" corresponde aos valores p do teste Bonferroni para outliers e , por fim, "hat" para os valores-hat values (ou pontos de alavanca).
+
+
+```{r,fig.align='center', fig.width=7,fig.height=4}
+# gráfico de influência e alavanca
+influenceIndexPlot(fit.model2,col='blue')
+```
+
+
+Para identificar quais são os pontos influentes dentres os apresentados nos 4 gráficos anteriores:
+
+```{r}
+influencePlot(fit.model2)
+```
+
+Considerando os valores dos resíduos studentizados, percebemos nenhum ponto se encontram fora do intervalo (-2,2).
+
+\mar  Para identificar os pontos influentes, precisamos encontrar aqueles com valor $\widehat{h} > \frac{2p}{n}
+=\frac{22}{1427} = .0154$, onde $p=11$ é o número de coeficientes de regressão e $n=1427$ é o número de observações. Neste caso, identificamos como ponto de alavanca (hat) 542, 631, 905 e 1550, já para os pontos de influência (Distância de Cook   ): 542, 905 e 1550, e assim, levando em consideração os pontos que têm mais de uma indicação problemática, concluímos que estes pontos requerem uma análise mais detalhada.
+
+
+```{r}
+# Retirada do ponto 542
+ajuste1<-glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    subset = -c(542),
+                    family = binomial(link = "cauchit"), data = train_)
+
+# Retirada do ponto 905
+ajuste2<-glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    subset = -c(905),
+                    family = binomial(link = "cauchit"), data = train_)
+
+# Retirada do ponto 1550
+ajuste3<-glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    subset = -c(1550),
+                    family = binomial(link = "cauchit"), data = train_)
+
+# Retirada do ponto 542 e 905
+ajuste4<-glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    subset = -c(542,905),
+                    family = binomial(link = "cauchit"), data = train_)
+# Retirada do ponto 542 e 1550
+ajuste5<-glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    subset = -c(542,1550),
+                    family = binomial(link = "cauchit"), data = train_)
+# Retirada do ponto 905 e 1550
+ajuste6<-glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    subset = -c(905, 1550),
+                    family = binomial(link = "cauchit"), data = train_)
+
+# Retirada do ponto 542, 905 e 1550
+ajuste7<-glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    subset = -c(542,905, 1550),
+                    family = binomial(link = "cauchit"), data = train_)
+```
+
+```{r}
+compareCoefs(fit.model2,ajuste1, ajuste2, ajuste3, ajuste4, ajuste5,ajuste6,ajuste7)
+```
+
+
+Conseguimos perceber que os coeficientes de regressão dos modelos propostos, quando se retiraram os pontos identificados na análise de diagnóstico não mudaram em relação ao modelo com todos os pontos (model1:fit.model2), e as interpretações são mantidas. Assim, mantemos o modelo reduzido como modelo final.
+
+
+Comparando o AIC dos modelos com retiradas dos pontos:
+
+```{r}
+data.frame(
+  Modelo= c("Completo", "Removendo 542", "Removendo 905",
+            "Removendo 1550", "Removendo 542 e 905","Removendo 542 e 1550",
+            "Removendo 905 e 1550","Removendo os 3"),
+  AIC = c(AIC(fit.model2),AIC(ajuste1), AIC(ajuste2), AIC(ajuste3),
+             AIC(ajuste4), AIC(ajuste5), AIC(ajuste6),
+             AIC(ajuste7)))
+```
+
+Ao comparar os AICs, observamos que sempre que removemos algum ponto detectado na análise diagnóstico, obtemos um menor AIC, indicando um melhor modelo, embora a diminuição seja pequena. Nós detectamos que o modelo com menor AIC é aquele que retira todos os três pontos influentes. O AIC do modelo com todos os pontos é 1874.961 e o AIC do modelo removendo os três pontos influentes é 1870.653.
+
+
+## Modelo final e interpretação de parâmetros
+
+\mar Anteriormente, dizemos que o ganho de AIC quando retiramos os 3 pontos problemáticos foi mínimo, dessa forma, escolhemos o modelo reduzido como o mais apropriado para os dados de covid.
+
+
+Assim o modelo final é
+
+- $y_i|x\stackrel{\text{iid}}{\sim}Bernoulli(\widehat{\mu}_i)$
+
+
+- $tan(\pi(\widehat{\mu}_i-0.5))= 0.17535301 - 0.07464329\times  sex  -0.12179391\times patient_type  +0.23743990\times pneumonia  -0.12858149 \times age -0.14312439\times copd     -0.16313370\times inmsupr -0.08028254\times other_disease  +0.09253628\times obesity  -0.08589672\times tobacco -0.18107767\times contact_other_covid$  
+ou
+- $\widehat{\mu}_i= 0.5+\frac{1}{\pi}arctan(0.17535301 - 0.07464329\times  sex  -0.12179391\times patient_type  +0.23743990\times pneumonia  -0.12858149 \times age -0.14312439\times copd     -0.16313370\times inmsupr -0.08028254\times other_disease  +0.09253628\times obesity  -0.08589672\times tobacco -0.18107767\times contact_other_covid)$  
+
+\mar Notamos que os coeficientes são positivos. Assim, a cada aumento de uma unidade na variável preditiva pneumonia para um efeito zero do resto, há um aumento de 
+$0.5+atan(0.17535301 +0.23743990)/pi=0.625$ na média (probabilidade) da variável resposta (covid).
+
+\mar Em outras palavras podemos dizer que a) isolando o índice de pneumonia, se este se incrementa em uma unidade há uma probabilidade de 62.5% de ser covid. O mesmo raciocínio se aplica às outras variáveis
+
+\mar Uma forma bastante utilizada para determinar o ponto de corte é através da Curva ROC  que para o modelo final é
+
+```{r, out.width="70%"}
+ROC(fit.model2$fitted.values,  train_$covid_res, plot= "ROC")
+```
+
+Pela análise da curva ROC, escolhemos o ponto de corte referente a combinação da sensibilidade e 1-especificidade que mais se aproxima do canto superior esquerdo do gráfico que neste caso é aproximadamente 0.7. 
+
+Temos encontrado que área baixo a curva ROC do modelo de 65%, a sensibilidade do modelo é 79.4% (capacidade do modelo classificar um indivíduo com covid dado que realmente ele está com covid) e especificidade de 44.1% (capacidade do modelo predizer um indivíduo sem covid dado que ele realmente não tem covid). 
+
+Adicionalmente a análise de Envelope do modelo é .
+
+```{r}
+hnp.glm.cauchit <- hnp(fit.model2, print.on=TRUE, plot=FALSE, halfnormal=F)
+```
+```{r,fig.align='center',fig.width=5,fig.height=4}
+plot(hnp.glm.cauchit, las=1, pch=20, cex=1, col=c(1,1,1,2))
+```
+\mar Parece que o modelo está bem ajustado.
+
+\newpage
+
+
+#D)
+
+
+- Concluímos que o melhor modelo de classificação para os dados é o modelo de regressão binária utilizando função de ligação Cauchit sem desconsiderar nenhuma observação. As estatísticas como AIC e curva ROC foram descritas acima.
+
+- Três observações foram identificadas como problemáticas e as análises mostraram que elas podem ser desconsideradas na formulação do modelo porém o ganho em termos de ajuste não foi relevante. 
+
+
+
+
+#E)
+
+
+- Modelo Cauchito
+```{r echo=FALSE}
+# Predição do modelo
+pred<-predict (fit.modelc, type='response', newdata=test_)
+
+confusionMatrix(as.factor(as.numeric(pred>0.5)),as.factor(test_$covid_res))
+```
+- Modelo Logístico
+
+```{r}
+
+fit.modell <- glm(formula = covid_res ~  sex + patient_type + pneumonia + age + 
+    copd + inmsupr + other_disease + obesity + tobacco + contact_other_covid, 
+                    family = binomial(link = "logit"), data = train_)
+
+pred<-predict (fit.modell, type='response', newdata=test_)
+confusionMatrix(as.factor(as.numeric(pred>0.5)),as.factor(test_$covid_res))
+```
+
+
+O modelo encontrado possui acurácia (67.5%) semelhante ao modelo logístico proposto no Notebook do Kaggle e também ao modelo logístico feito nesta questão.
