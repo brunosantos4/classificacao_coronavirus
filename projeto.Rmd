@@ -1,7 +1,7 @@
 ---
 title: "Untitled"
 author: "Bruno"
-date: "29/11/2021"
+date: ""
 output: pdf_document
 ---
 
@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r include=FALSE}
-install.packages('e1071', dependencies=TRUE)
+#install.packages('e1071', dependencies=TRUE)
 library(e1071)
 library(caret)
 library(MASS)
@@ -240,7 +240,7 @@ Para a formulação de nosso modelo nós assumimos que esta variável segue uma 
 
 Sabemos que para uma resposta binária temos que, $E(Y_i)= \sum_{y=0}^1 P(Y_i=y_i)y = 1\times P(Y_i=1)+0\times P(Y_i=0) =\mu_i \in (0,1)$. Então, temos interesse em estimar $\widehat{\mu}_i$, em que $y=1$ significa que o paciente possui covid.
 
-\mar Assim,  o modelo de regressão binária diz que,
+Assim,  o modelo de regressão binária diz que,
 
 $$Y_{i}\sim Bernoulli(\mu_i)$$ com
 $$\mu_i=F(\eta_i)=F(x_i^T\beta),\ i=1,\dots,n$$
@@ -255,7 +255,7 @@ em que
 O modelo proposto é chamado modelo de regressão binária. Este modelo
 é um modelo de classificação que faz parte dos chamados modelos lineares generalizados. Existem também outros modelos de classificação no aprendizado supervisionado.
 
-\mar Especificamente, vamos considerar o modelo de regressão binária com uma função de ligação logito.
+Especificamente, vamos considerar o modelo de regressão binária com uma função de ligação logito.
 
 - Componente aleatório: $y_1,...,y_{1427}$ é uma amostra aleatória $Y_i\sim Bernoulli(\mu_i)$
 
@@ -273,7 +273,7 @@ $$
 \mu_i= F(\eta_i) = \frac{exp(\eta_i) }{1 + exp(\eta_i)} =  \frac{exp(\beta_0 + \beta_1x_1 + \beta_2 x_2 + \beta_3 x_3...) }{1 + exp(\beta_0 + \beta_1x_1 + \beta_2 x_2 + \beta_3 x_3...)}
 $$
 
-\mar  O nosso interesse é utilizar o chamado modelo de regressão binária para modelar $\mu_i=E(Y_i|X), i=1,\ldots,n$ e estimar os coeficientes de regressão \textbf{$\beta$} associados com as variáveis explicativas  considerando uma determinada função de ligação.
+ O nosso interesse é utilizar o chamado modelo de regressão binária para modelar $\mu_i=E(Y_i|X), i=1,\ldots,n$ e estimar os coeficientes de regressão \textbf{$\beta$} associados com as variáveis explicativas  considerando uma determinada função de ligação.
 
 
 
@@ -295,7 +295,7 @@ summary(fit.model)
 Observamos que os intervalos de confiança dos coeficientes para estimar alguns betas contém o valor zero, o que confirma que essas covariáveis não são significativas
 
 
-\mar Verificando a significância das variáveis utilizando um teste
+Verificando a significância das variáveis utilizando um teste
 alternativo baseado na análise de deviance usando a estatística qui-quadrado.
 
 ```{r}
@@ -303,12 +303,12 @@ alternativo baseado na análise de deviance usando a estatística qui-quadrado.
 anova(fit.model,test = 'Chisq')
 ```
 
-\mar Notamos o mesmo que no teste anterior.
+Notamos o mesmo que no teste anterior.
 
 
 ## análises preditivas 
 
-\mar Usando os seguintes comandos obtemos as Curvas ROC (receiver operating characteristic) para o modelo 
+Usando os seguintes comandos obtemos as Curvas ROC (receiver operating characteristic) para o modelo 
 
 
 ```{r, out.width="70%"}
@@ -401,7 +401,7 @@ Portanto, escolhemos o modelo de regressão binária com ligação cauchito por 
 vamos fazer uma análise de seleção de variáveis utilizando a função do R stepAIC, que nos ajuda a detectar os melhores preditores.
 
 
-\mar Utilizando a função stepAIC, temos:
+Utilizando a função stepAIC, temos:
 ```{r}
 # stepAIC
 stepAIC(fit.modelc)
@@ -445,7 +445,7 @@ influencePlot(fit.model2)
 
 Considerando os valores dos resíduos studentizados, percebemos nenhum ponto se encontram fora do intervalo (-2,2).
 
-\mar  Para identificar os pontos influentes, precisamos encontrar aqueles com valor $\widehat{h} > \frac{2p}{n}
+ Para identificar os pontos influentes, precisamos encontrar aqueles com valor $\widehat{h} > \frac{2p}{n}
 =\frac{22}{1427} = .0154$, onde $p=11$ é o número de coeficientes de regressão e $n=1427$ é o número de observações. Neste caso, identificamos como ponto de alavanca (hat) 542, 631, 905 e 1550, já para os pontos de influência (Distância de Cook   ): 542, 905 e 1550, e assim, levando em consideração os pontos que têm mais de uma indicação problemática, concluímos que estes pontos requerem uma análise mais detalhada.
 
 
@@ -516,7 +516,7 @@ Ao comparar os AICs, observamos que sempre que removemos algum ponto detectado n
 
 ## Modelo final e interpretação de parâmetros
 
-\mar Anteriormente, dizemos que o ganho de AIC quando retiramos os 3 pontos problemáticos foi mínimo, dessa forma, escolhemos o modelo reduzido como o mais apropriado para os dados de covid.
+Anteriormente, dizemos que o ganho de AIC quando retiramos os 3 pontos problemáticos foi mínimo, dessa forma, escolhemos o modelo reduzido como o mais apropriado para os dados de covid.
 
 
 Assim o modelo final é
@@ -528,12 +528,12 @@ Assim o modelo final é
 ou
 - $\widehat{\mu}_i= 0.5+\frac{1}{\pi}arctan(0.17535301 - 0.07464329\times  sex  -0.12179391\times patient_type  +0.23743990\times pneumonia  -0.12858149 \times age -0.14312439\times copd     -0.16313370\times inmsupr -0.08028254\times other_disease  +0.09253628\times obesity  -0.08589672\times tobacco -0.18107767\times contact_other_covid)$  
 
-\mar Notamos que os coeficientes são positivos. Assim, a cada aumento de uma unidade na variável preditiva pneumonia para um efeito zero do resto, há um aumento de 
+Notamos que os coeficientes são positivos. Assim, a cada aumento de uma unidade na variável preditiva pneumonia para um efeito zero do resto, há um aumento de 
 $0.5+atan(0.17535301 +0.23743990)/pi=0.625$ na média (probabilidade) da variável resposta (covid).
 
-\mar Em outras palavras podemos dizer que a) isolando o índice de pneumonia, se este se incrementa em uma unidade há uma probabilidade de 62.5% de ser covid. O mesmo raciocínio se aplica às outras variáveis
+Em outras palavras podemos dizer que a) isolando o índice de pneumonia, se este se incrementa em uma unidade há uma probabilidade de 62.5% de ser covid. O mesmo raciocínio se aplica às outras variáveis
 
-\mar Uma forma bastante utilizada para determinar o ponto de corte é através da Curva ROC  que para o modelo final é
+Uma forma bastante utilizada para determinar o ponto de corte é através da Curva ROC  que para o modelo final é
 
 ```{r, out.width="70%"}
 ROC(fit.model2$fitted.values,  train_$covid_res, plot= "ROC")
@@ -551,7 +551,7 @@ hnp.glm.cauchit <- hnp(fit.model2, print.on=TRUE, plot=FALSE, halfnormal=F)
 ```{r,fig.align='center',fig.width=5,fig.height=4}
 plot(hnp.glm.cauchit, las=1, pch=20, cex=1, col=c(1,1,1,2))
 ```
-\mar Parece que o modelo está bem ajustado.
+Parece que o modelo está bem ajustado.
 
 \newpage
 
